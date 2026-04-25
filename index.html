@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gangnam Launchpad</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101112;
+      --panel: #191b1f;
+      --panel-strong: #242830;
+      --line: rgba(255, 255, 255, .14);
+      --text: #f4f7fb;
+      --muted: #9aa3af;
+      --green: #41d6a4;
+      --pad-size: clamp(112px, 14vw, 160px);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        linear-gradient(135deg, rgba(255, 79, 123, .14), transparent 34%),
+        linear-gradient(315deg, rgba(65, 214, 164, .12), transparent 38%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button, input { font: inherit; }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(220px, 280px) 1fr;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: rgba(16, 17, 18, .9);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .brand { display: grid; gap: 12px; }
+
+    .brand-mark {
+      width: 48px;
+      aspect-ratio: 1;
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+      padding: 8px;
+      background: var(--panel);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, .28);
+    }
+
+    .brand-mark span { border-radius: 4px; box-shadow: 0 0 18px currentColor; }
+    .brand-mark span:nth-child(1) { background: #41d6a4; }
+    .brand-mark span:nth-child(2) { background: #ff4f7b; }
+    .brand-mark span:nth-child(3) { background: #f6c85f; }
+    .brand-mark span:nth-child(4) { background: #58a6ff; }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .control-group { display: grid; gap: 12px; }
+
+    .control-title {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .transport {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .icon-button, .mode-button {
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      background: var(--panel);
+      cursor: pointer;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+
+    .icon-button:hover, .mode-button:hover {
+      border-color: rgba(255, 255, 255, .3);
+      background: var(--panel-strong);
+    }
+
+    .icon-button:active, .mode-button:active { transform: translateY(1px); }
+
+    .mode-button[aria-pressed="true"] {
+      border-color: rgba(65, 214, 164, .78);
+      background: rgba(65, 214, 164, .15);
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--green);
+    }
+
+    .meter {
+      min-height: 104px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0b0c0e;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .main {
+      padding: clamp(22px, 4vw, 42px);
+      display: grid;
+      gap: 26px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 20px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 20px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .headline {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 72px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+
+    .status {
+      min-width: 230px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(25, 27, 31, .76);
+      color: var(--muted);
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .status strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      margin-bottom: 3px;
+    }
+
+    .pad-grid {
+      display: grid;
+      grid-template-columns: repeat(4, var(--pad-size));
+      grid-auto-rows: var(--pad-size);
+      justify-content: center;
+      gap: clamp(12px, 2vw, 18px);
+    }
+
+    .pad {
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 8px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 25% 20%, rgba(255, 255, 255, .22), transparent 34%),
+        linear-gradient(145deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02)),
+        var(--pad-color);
+      cursor: pointer;
+      display: grid;
+      align-content: space-between;
+      padding: 15px;
+      text-align: left;
+      overflow: hidden;
+      box-shadow: 0 18px 42px rgba(0, 0, 0, .3);
+      transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+      touch-action: manipulation;
+    }
+
+    .pad::after {
+      content: "";
+      position: absolute;
+      inset: auto 14px 14px 14px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .42);
+      transform: scaleX(.18);
+      transform-origin: left;
+      opacity: .58;
+      transition: transform .18s ease, opacity .18s ease;
+    }
+
+    .pad:hover { transform: translateY(-3px); filter: saturate(1.12); }
+
+    .pad.is-playing {
+      transform: translateY(2px) scale(.985);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, .18), 0 0 42px var(--pad-glow);
+    }
+
+    .pad.is-playing::after { transform: scaleX(1); opacity: .95; }
+
+    .key {
+      width: 34px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, .28);
+      border: 1px solid rgba(255, 255, 255, .16);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .label {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .name {
+      font-size: clamp(20px, 2.2vw, 30px);
+      line-height: 1;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .file {
+      color: rgba(255, 255, 255, .72);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .sequencer {
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .sequencer-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .sequencer-title {
+      display: grid;
+      gap: 5px;
+    }
+
+    .sequencer-title h3 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .sequencer-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .sequencer-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .small-button {
+      min-height: 38px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      background: var(--panel);
+      cursor: pointer;
+    }
+
+    .small-button.is-active {
+      border-color: rgba(65, 214, 164, .82);
+      background: rgba(65, 214, 164, .17);
+    }
+
+    .tempo {
+      width: 78px;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0f1114;
+      color: var(--text);
+      padding: 0 10px;
+    }
+
+    .timeline {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(15, 17, 20, .72);
+      padding: 12px;
+    }
+
+    .bar-numbers,
+    .track-row {
+      display: grid;
+      grid-template-columns: 92px repeat(64, 18px);
+      gap: 4px;
+      align-items: center;
+      min-width: 1576px;
+    }
+
+    .bar-numbers {
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .bar-label {
+      grid-column: span 16;
+      border-left: 1px solid rgba(255, 255, 255, .24);
+      padding-left: 6px;
+    }
+
+    .track-row + .track-row { margin-top: 6px; }
+
+    .track-name {
+      height: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .track-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--track-color);
+      box-shadow: 0 0 14px var(--track-color);
+      flex: 0 0 auto;
+    }
+
+    .step {
+      width: 18px;
+      height: 24px;
+      border: 1px solid rgba(255, 255, 255, .09);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, .045);
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .step.beat { background: rgba(255, 255, 255, .075); }
+    .step.bar { border-left-color: rgba(255, 255, 255, .36); }
+    .step.is-on {
+      border-color: var(--track-color);
+      background: color-mix(in srgb, var(--track-color) 58%, #111 42%);
+      box-shadow: 0 0 12px color-mix(in srgb, var(--track-color) 52%, transparent);
+    }
+    .step.is-current {
+      outline: 2px solid rgba(255, 255, 255, .7);
+      outline-offset: 1px;
+    }
+
+    @media (max-width: 920px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        padding: 20px;
+      }
+      .meter { min-height: 86px; }
+      .pad-grid { grid-template-columns: repeat(2, minmax(118px, var(--pad-size))); }
+      .topbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .status { text-align: left; }
+    }
+
+    @media (max-width: 460px) {
+      :root { --pad-size: min(42vw, 156px); }
+      .main { padding: 18px; }
+      .pad { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div>
+          <h1>Gangnam<br>Launchpad</h1>
+          <p class="subtitle">&#49436;&#50868;&#46300; &#49548;&#49828; 8&#44060;&#47484; &#54056;&#46300;&#50752; 4&#47560;&#46356; &#47336;&#54532;&#47196; &#51116;&#49373;</p>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-title">Transport</div>
+        <div class="transport">
+          <button class="icon-button" id="stopAll" type="button" title="Stop all sounds">&#9632;</button>
+          <button class="mode-button" id="holdMode" type="button" aria-pressed="false">Hold</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-title">Volume</div>
+        <label class="range-row">
+          <input id="volume" type="range" min="0" max="100" value="86">
+          <span id="volumeValue">86%</span>
+        </label>
+      </div>
+
+      <div class="control-group">
+        <div class="control-title">Signal</div>
+        <div class="meter">
+          <canvas id="visualizer" width="520" height="220" aria-label="Audio visualizer"></canvas>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">Sound Source / 8 Pads</p>
+          <h2 class="headline">Press, Tap,<br>Sequence.</h2>
+        </div>
+        <div class="status" aria-live="polite">
+          <strong id="statusName">Ready</strong>
+          <span id="statusDetail">&#54056;&#46300; &#46608;&#45716; &#53412;&#48372;&#46300; A S D F J K L ;</span>
+        </div>
+      </section>
+
+      <section class="pad-grid" id="padGrid" aria-label="Launchpad sound pads"></section>
+
+      <section class="sequencer" aria-label="Four bar sample sequencer">
+        <div class="sequencer-head">
+          <div class="sequencer-title">
+            <h3>4 Bar Loop Tracks</h3>
+            <p>64&#49828;&#53581; &#44201;&#51088;&#50640; &#44033; &#49368;&#54540;&#51012; &#48176;&#52824;&#54616;&#49464;&#50836;.</p>
+          </div>
+          <div class="sequencer-actions">
+            <button class="small-button" id="loopPlay" type="button">Play Loop</button>
+            <button class="small-button" id="loopStop" type="button">Stop</button>
+            <button class="small-button" id="loopClear" type="button">Clear</button>
+            <label class="range-row">
+              <input class="tempo" id="tempo" type="number" min="60" max="180" value="120">
+              <span>BPM</span>
+            </label>
+          </div>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const sounds = [
+      { key: "A", name: "\uC2F8\uB098\uC774", file: "sound_source/\uC2F8\uB098\uC774.ogg", color: "#e84d6a" },
+      { key: "S", name: "\uC544", file: "sound_source/\uC544.ogg", color: "#f59e42" },
+      { key: "D", name: "\uC5D0~", file: "sound_source/\uC5D0~.ogg", color: "#f6c85f" },
+      { key: "F", name: "\uC5EC\uCA14", file: "sound_source/\uC5EC\uCA14.ogg", color: "#35c98f" },
+      { key: "J", name: "\uC635", file: "sound_source/\uC635.ogg", color: "#38bdf8" },
+      { key: "K", name: "\uC6B8\uD241\uBD88\uD241", file: "sound_source/\uC6B8\uD241\uBD88\uD241.ogg", color: "#5b8def" },
+      { key: "L", name: "\uC778\uAC04", file: "sound_source/\uC778\uAC04.ogg", color: "#9b72f2" },
+      { key: ";", name: "\uD5E4\uC774", file: "sound_source/\uD5E4\uC774.ogg", color: "#f472b6" }
+    ];
+
+    const totalSteps = 64;
+    const padGrid = document.querySelector("#padGrid");
+    const timeline = document.querySelector("#timeline");
+    const statusName = document.querySelector("#statusName");
+    const statusDetail = document.querySelector("#statusDetail");
+    const volume = document.querySelector("#volume");
+    const volumeValue = document.querySelector("#volumeValue");
+    const stopAll = document.querySelector("#stopAll");
+    const holdMode = document.querySelector("#holdMode");
+    const loopPlay = document.querySelector("#loopPlay");
+    const loopStop = document.querySelector("#loopStop");
+    const loopClear = document.querySelector("#loopClear");
+    const tempo = document.querySelector("#tempo");
+    const canvas = document.querySelector("#visualizer");
+    const canvasContext = canvas.getContext("2d");
+    const audioByKey = new Map();
+    const padByKey = new Map();
+    const pattern = sounds.map(() => Array(totalSteps).fill(false));
+    let currentStep = -1;
+    let loopTimer = null;
+    let visualPulse = 0;
+
+    function makeAudio(sound) {
+      const audio = document.createElement("audio");
+      audio.src = sound.file;
+      audio.preload = "auto";
+      audio.volume = Number(volume.value) / 100;
+      audio.addEventListener("error", () => {
+        statusName.textContent = "File error";
+        statusDetail.textContent = `${sound.name} / ${sound.file}`;
+      });
+      return audio;
+    }
+
+    function setVolume(value) {
+      volumeValue.textContent = `${value}%`;
+      audioByKey.forEach((audio) => {
+        audio.volume = Number(value) / 100;
+      });
+    }
+
+    function resetAudio(audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    function triggerSound(sound, options = {}) {
+      const audio = audioByKey.get(sound.key);
+      const pad = padByKey.get(sound.key);
+
+      if (!holdMode.matches("[aria-pressed='true']") || options.fromSequence) {
+        resetAudio(audio);
+      }
+
+      pad.classList.add("is-playing");
+      visualPulse = 1;
+      statusName.textContent = sound.name;
+      statusDetail.textContent = options.fromSequence ? `Step ${currentStep + 1} / ${sound.name}` : `${sound.key} / ${sound.name}`;
+
+      audio.play().catch((error) => {
+        statusName.textContent = "Audio blocked";
+        statusDetail.textContent = error && error.message ? error.message : "Audio play failed";
+        pad.classList.remove("is-playing");
+      });
+    }
+
+    function stopAllSounds() {
+      audioByKey.forEach(resetAudio);
+      document.querySelectorAll(".pad").forEach((pad) => pad.classList.remove("is-playing"));
+      statusName.textContent = "Stopped";
+      statusDetail.textContent = "All sounds stopped";
+    }
+
+    function renderPads() {
+      sounds.forEach((sound) => {
+        audioByKey.set(sound.key, makeAudio(sound));
+
+        const pad = document.createElement("button");
+        pad.className = "pad";
+        pad.type = "button";
+        pad.style.setProperty("--pad-color", sound.color);
+        pad.style.setProperty("--pad-glow", sound.color);
+        pad.setAttribute("aria-label", `${sound.name} sound pad`);
+        pad.innerHTML = `
+          <span class="key">${sound.key}</span>
+          <span class="label">
+            <span class="name">${sound.name}</span>
+            <span class="file">${sound.file.replace("sound_source/", "")}</span>
+          </span>
+        `;
+        pad.addEventListener("pointerdown", () => triggerSound(sound));
+        audioByKey.get(sound.key).addEventListener("ended", () => pad.classList.remove("is-playing"));
+        padByKey.set(sound.key, pad);
+        padGrid.appendChild(pad);
+      });
+    }
+
+    function renderSequencer() {
+      const header = document.createElement("div");
+      header.className = "bar-numbers";
+      header.innerHTML = `
+        <span></span>
+        <span class="bar-label">Bar 1</span>
+        <span class="bar-label">Bar 2</span>
+        <span class="bar-label">Bar 3</span>
+        <span class="bar-label">Bar 4</span>
+      `;
+      timeline.appendChild(header);
+
+      sounds.forEach((sound, trackIndex) => {
+        const row = document.createElement("div");
+        row.className = "track-row";
+        row.style.setProperty("--track-color", sound.color);
+        row.innerHTML = `<div class="track-name"><span class="track-dot"></span><span>${sound.name}</span></div>`;
+
+        for (let step = 0; step < totalSteps; step += 1) {
+          const button = document.createElement("button");
+          button.className = "step";
+          button.type = "button";
+          button.dataset.track = String(trackIndex);
+          button.dataset.step = String(step);
+          button.setAttribute("aria-label", `${sound.name} step ${step + 1}`);
+          if (step % 4 === 0) button.classList.add("beat");
+          if (step % 16 === 0) button.classList.add("bar");
+          button.addEventListener("click", () => {
+            pattern[trackIndex][step] = !pattern[trackIndex][step];
+            button.classList.toggle("is-on", pattern[trackIndex][step]);
+          });
+          row.appendChild(button);
+        }
+
+        timeline.appendChild(row);
+      });
+    }
+
+    function updateCurrentStep(nextStep) {
+      document.querySelectorAll(".step.is-current").forEach((step) => step.classList.remove("is-current"));
+      currentStep = nextStep;
+      document.querySelectorAll(`.step[data-step="${currentStep}"]`).forEach((step) => step.classList.add("is-current"));
+    }
+
+    function stepIntervalMs() {
+      const bpm = Math.min(180, Math.max(60, Number(tempo.value) || 120));
+      tempo.value = String(bpm);
+      return 60000 / bpm / 4;
+    }
+
+    function playLoopStep() {
+      updateCurrentStep((currentStep + 1) % totalSteps);
+      sounds.forEach((sound, trackIndex) => {
+        if (pattern[trackIndex][currentStep]) triggerSound(sound, { fromSequence: true });
+      });
+    }
+
+    function startLoop() {
+      if (loopTimer) return;
+      loopPlay.classList.add("is-active");
+      statusName.textContent = "Loop playing";
+      statusDetail.textContent = "4 bars / 64 steps";
+      playLoopStep();
+      loopTimer = window.setInterval(playLoopStep, stepIntervalMs());
+    }
+
+    function stopLoop() {
+      window.clearInterval(loopTimer);
+      loopTimer = null;
+      loopPlay.classList.remove("is-active");
+      updateCurrentStep(-1);
+      stopAllSounds();
+    }
+
+    function clearLoop() {
+      pattern.forEach((track) => track.fill(false));
+      document.querySelectorAll(".step.is-on").forEach((step) => step.classList.remove("is-on"));
+      statusName.textContent = "Pattern clear";
+      statusDetail.textContent = "All track steps removed";
+    }
+
+    volume.addEventListener("input", (event) => setVolume(event.target.value));
+    stopAll.addEventListener("click", stopAllSounds);
+    holdMode.addEventListener("click", () => {
+      const next = !holdMode.matches("[aria-pressed='true']");
+      holdMode.setAttribute("aria-pressed", String(next));
+    });
+    loopPlay.addEventListener("click", startLoop);
+    loopStop.addEventListener("click", stopLoop);
+    loopClear.addEventListener("click", clearLoop);
+    tempo.addEventListener("change", () => {
+      if (!loopTimer) return;
+      window.clearInterval(loopTimer);
+      loopTimer = window.setInterval(playLoopStep, stepIntervalMs());
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.repeat) return;
+      const key = event.key === ";" ? ";" : event.key.toUpperCase();
+      const sound = sounds.find((item) => item.key === key);
+      if (sound) triggerSound(sound);
+      if (event.key === "Escape") stopLoop();
+      if (event.code === "Space") {
+        event.preventDefault();
+        loopTimer ? stopLoop() : startLoop();
+      }
+    });
+
+    function renderVisualizer() {
+      requestAnimationFrame(renderVisualizer);
+      const width = canvas.width;
+      const height = canvas.height;
+      const bars = 64;
+
+      canvasContext.clearRect(0, 0, width, height);
+      canvasContext.fillStyle = "#0b0c0e";
+      canvasContext.fillRect(0, 0, width, height);
+
+      for (let i = 0; i < bars; i += 1) {
+        const idle = Math.max(0, Math.sin(Date.now() / 500 + i) * .14);
+        const hit = Math.max(0, Math.sin(Date.now() / 70 + i * .58)) * visualPulse;
+        const value = Math.min(1, idle + hit);
+        const barWidth = width / bars;
+        const barHeight = Math.max(4, value * (height - 20));
+        const hue = 150 + i * 3;
+        canvasContext.fillStyle = `hsl(${hue}, 78%, ${48 + value * 20}%)`;
+        canvasContext.fillRect(i * barWidth, height - barHeight, Math.max(2, barWidth - 3), barHeight);
+      }
+
+      visualPulse *= .92;
+    }
+
+    renderPads();
+    renderSequencer();
+    setVolume(volume.value);
+    renderVisualizer();
+  </script>
+</body>
+</html>
